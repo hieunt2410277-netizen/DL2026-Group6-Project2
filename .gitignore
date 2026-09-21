@@ -1,0 +1,67 @@
+# =========================
+# Project Data
+# =========================
+
+# Raw and processed datasets
+data/raw/*
+data/processed/*
+
+# Keep placeholder files
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+
+
+# =========================
+# Model Checkpoints
+# =========================
+
+checkpoints/*
+!checkpoints/.gitkeep
+
+*.pt
+*.pth
+*.ckpt
+
+
+# =========================
+# Experiment Outputs
+# =========================
+
+# Logs
+logs/
+*.log
+
+# TensorBoard
+runs/
+
+# Temporary outputs
+outputs/
+
+
+# =========================
+# Environment / Secrets
+# =========================
+
+.env
+.env.*
+venv/
+.venv/
+env/
+
+
+# =========================
+# IDE / OS
+# =========================
+
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db
+
+
+# =========================
+# Jupyter
+# =========================
+
+.ipynb_checkpoints/
