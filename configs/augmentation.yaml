@@ -1,0 +1,39 @@
+# Data Augmentation Experiment Configuration
+
+experiment:
+  name: augmentation
+  description: >
+    Evaluate the effect of data augmentation on fine-grained image
+    classification under limited training data.
+  seed: 42
+
+data:
+  image_size: 224
+  batch_size: 32
+  num_workers: 2
+
+  train_dir: data/processed/train
+  val_dir: data/processed/val
+  test_dir: data/processed/test
+
+  augmentation: basic
+
+model:
+  name: baseline_cnn
+  num_classes: null
+
+training:
+  epochs: 20
+  learning_rate: 0.001
+  weight_decay: 0.0001
+
+evaluation:
+  save_metrics: true
+  save_confusion_matrix: true
+  save_training_curves: true
+
+output:
+  experiment_dir: experiments/exp03_augmentation
+  metrics_dir: results/metrics
+  figures_dir: results/figures
+  checkpoints_dir: checkpoints
