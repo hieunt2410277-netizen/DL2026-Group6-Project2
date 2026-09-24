@@ -65,7 +65,3 @@ Thumbs.db
 # =========================
 
 .ipynb_checkpoints/
-
-# Ignore dataset images
-data/*
-!data/README.md
