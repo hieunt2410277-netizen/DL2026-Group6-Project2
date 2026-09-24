@@ -14,23 +14,12 @@ Dựa trên yêu cầu phân loại các nhóm đối tượng có vẻ ngoài g
 
 ## 4. Setup Instructions & DataLoader Usage
 
-**Thiết lập môi trường (Đồng bộ Windows & Linux):**
-Dự án sử dụng file `requirements.txt` để đồng bộ thư viện, giúp tránh xung đột giữa các hệ điều hành.
-
+**Thiết lập môi trường (Windows & Linux):**
+Dự án sử dụng file `requirements.txt` để đồng bộ thư viện tránh xung đột hệ điều hành.
 1. Khởi tạo và kích hoạt môi trường ảo:
-   - **Windows (Dành cho các bạn trong nhóm):** Mở CMD/Terminal ở thư mục gốc và chạy 2 lệnh sau:
-     ```cmd
-     python -m venv venv
-     venv\Scripts\activate
-     ```
-   - **Linux (Mint/Ubuntu):**
-     ```bash
-     python3 -m venv venv
-     source venv/bin/activate
-     ```
-2. Cài đặt toàn bộ thư viện cần thiết:
-   ```bash
-   pip install -r requirements.txt
+   - **Windows:** `python -m venv venv` rồi chạy `venv\Scripts\activate`
+   - **Linux:** `python3 -m venv venv` rồi chạy `source venv/bin/activate`
+2. Cài đặt toàn bộ thư viện đồng bộ: `pip install -r requirements.txt`
 
 **Cách gọi DataLoader trong các tập lệnh huấn luyện:**
 ```python
