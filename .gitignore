@@ -69,3 +69,5 @@ Thumbs.db
 # Ignore dataset images
 data/*
 !data/README.md
+data/CUB_200_2011.tgz
+data/CUB_200_2011/
