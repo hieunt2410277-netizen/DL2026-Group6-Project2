@@ -1,0 +1,32 @@
+__pycache__/
+*.py[cod]
+
+.venv/
+venv/
+env/
+
+.env
+
+# Dataset
+data/raw/
+data/processed/
+
+# Model/cache
+*.pt
+*.pth
+
+# Training outputs
+experiments/*/checkpoints/
+experiments/*/logs/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model checkpoints
+*.pth
+*.pt

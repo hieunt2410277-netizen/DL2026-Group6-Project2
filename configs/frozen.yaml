@@ -1,0 +1,14 @@
+model: resnet18
+num_classes: 200
+
+transfer_learning:
+  strategy: frozen
+
+training:
+  epochs: 10
+  batch_size: 32
+  learning_rate: 0.001
+
+data:
+  path: data/raw/CUB_200_2011
+  augmentation: true
