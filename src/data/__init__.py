@@ -8,7 +8,7 @@ from .augmentation import (
     get_transform,
 )
 
-from .dataset import create_dataloaders
+from .dataset import get_dataloaders
 
 
 __all__ = [
@@ -19,5 +19,5 @@ __all__ = [
     "strong_augmentation_transform",
     "validation_transform",
     "get_transform",
-    "create_dataloaders",
+    "get_dataloaders",
 ]

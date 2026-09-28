@@ -7,7 +7,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from .augmentation import get_transform
 
 
 DATASET_DIR_NAME = "CUB_200_2011"
@@ -218,54 +218,6 @@ class CUB200Dataset(Dataset):
         return image, label
 
 
-def get_transforms(
-    image_size: int = 224,
-    use_augmentation: bool = False,
-):
-    """
-    Create separate transforms for training and evaluation.
-
-    Augmentation is optional so that augmentation experiments
-    can be controlled explicitly.
-    """
-
-    normalization = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225],
-    )
-
-    if use_augmentation:
-        train_transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                transforms.RandomResizedCrop(image_size),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalization,
-            ]
-        )
-    else:
-        train_transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop(image_size),
-                transforms.ToTensor(),
-                normalization,
-            ]
-        )
-
-    evaluation_transform = transforms.Compose(
-        [
-            transforms.Resize((256, 256)),
-            transforms.CenterCrop(image_size),
-            transforms.ToTensor(),
-            normalization,
-        ]
-    )
-
-    return train_transform, evaluation_transform
-
-
 def get_dataloaders(
     data_dir: str = "./data",
     batch_size: int = 32,
@@ -294,11 +246,18 @@ def get_dataloaders(
         seed=seed,
     )
 
-    train_transform, evaluation_transform = (
-        get_transforms(
-            image_size=image_size,
-            use_augmentation=use_augmentation,
-        )
+    augmentation_type = "basic" if use_augmentation else "none"
+
+    train_transform = get_transform(
+        augmentation=augmentation_type,
+        image_size=image_size,
+        train=True,
+    )
+
+    evaluation_transform = get_transform(
+        augmentation="none",
+        image_size=image_size,
+        train=False,
     )
 
     train_dataset = CUB200Dataset(
