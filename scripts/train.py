@@ -8,11 +8,8 @@ import torch.nn as nn
 from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
-from src.data.cub200 import get_dataloaders
+from src.data.dataset import get_dataloaders
 from src.models.resnet18 import build_resnet18, count_parameters
-
-
-NUM_CLASSES = 200
 
 
 def run_epoch(model, loader, criterion, device, optimizer=None):
@@ -104,14 +101,14 @@ def train_frozen(args, device):
     Path("checkpoints").mkdir(exist_ok=True)
     Path("results/metrics").mkdir(parents=True, exist_ok=True)
 
-    train_loader, val_loader = get_dataloaders(
-        args.data_dir,
+    train_loader, val_loader, test_loader, classes, num_classes = get_dataloaders(
+        data_dir=args.data_dir,
         batch_size=args.batch_size,
         num_workers=0,
-        augment=True,
+        use_augmentation=True,
     )
 
-    model = build_resnet18(NUM_CLASSES, "frozen").to(device)
+    model = build_resnet18(num_classes, "frozen").to(device)
     total, trainable = count_parameters(model)
 
     print(f"Total parameters: {total:,}")
@@ -206,14 +203,14 @@ def train_partial_finetune(args, device):
 
     # Deterministic transforms are used here because cached features are reused
     # across all epochs. Random augmentation would only happen once during caching.
-    train_loader, val_loader = get_dataloaders(
-        args.data_dir,
+    train_loader, val_loader, test_loader, classes, num_classes = get_dataloaders(
+        data_dir=args.data_dir,
         batch_size=args.batch_size,
         num_workers=0,
-        augment=False,
+        use_augmentation=False,
     )
 
-    model = build_resnet18(NUM_CLASSES, "finetune").to(device)
+    model = build_resnet18(num_classes, "finetune").to(device)
     frozen_body, layer4, avgpool, fc = get_resnet_parts(model)
 
     # Freeze everything through layer3.
