@@ -7,6 +7,7 @@ from src.utils.config import load_config
 from src.utils.seed import set_seed
 from src.utils.results import save_metrics
 from src.evaluation.visualization import plot_training_curves
+from src.data.dataset import get_dataloaders
 
 
 def main():
@@ -32,17 +33,20 @@ def main():
     print(f"Learning rate: {learning_rate}")
     print(f"Seed: {seed}")
 
-    # TODO: Replace these when the common DataLoader is ready.
-    train_loader = None
-    val_loader = None
-    num_classes = None
+    train_loader, val_loader, test_loader, classes, num_classes = get_dataloaders(
+        data_dir="data",
+        batch_size=batch_size,
+        image_size=image_size,
+        samples_per_class=None,
+        use_augmentation=False,
+        seed=seed,
+        num_workers=0,
+    )
 
-    if train_loader is None or val_loader is None:
-        print(
-            "Baseline training pipeline is waiting "
-            "for the common DataLoader."
-        )
-        return
+    print(f"Number of classes: {num_classes}")
+    print(f"Train samples: {len(train_loader.dataset)}")
+    print(f"Validation samples: {len(val_loader.dataset)}")
+    print(f"Test samples: {len(test_loader.dataset)}")
 
     model = BaselineCNN(
         num_classes=num_classes
@@ -81,21 +85,10 @@ def main():
             device=device,
         )
 
-        history["train_loss"].append(
-            train_metrics["loss"]
-        )
-
-        history["train_accuracy"].append(
-            train_metrics["accuracy"]
-        )
-
-        history["val_loss"].append(
-            val_metrics["loss"]
-        )
-
-        history["val_accuracy"].append(
-            val_metrics["accuracy"]
-        )
+        history["train_loss"].append(train_metrics["loss"])
+        history["train_accuracy"].append(train_metrics["accuracy"])
+        history["val_loss"].append(val_metrics["loss"])
+        history["val_accuracy"].append(val_metrics["accuracy"])
 
         print(
             f"Epoch [{epoch + 1}/{epochs}] "
@@ -105,17 +98,38 @@ def main():
             f"Val Acc: {val_metrics['accuracy']:.4f}"
         )
 
+    test_metrics = validate(
+        model=model,
+        dataloader=test_loader,
+        criterion=criterion,
+        device=device,
+    )
+
+    history["test_accuracy"] = test_metrics["accuracy"]
+
+    print(
+        f"Test Loss: {test_metrics['loss']:.4f} "
+        f"Test Acc: {test_metrics['accuracy']:.4f}"
+    )
+     
+    torch.save(
+        model.state_dict(),
+        "checkpoints/baseline_final.pth"
+    )
+
+
     save_metrics(
         history,
         "results/metrics/baseline.json"
     )
+
     plot_training_curves(
-    train_loss=history["train_loss"],
-    val_loss=history["val_loss"],
-    train_accuracy=history["train_accuracy"],
-    val_accuracy=history["val_accuracy"],
-    output_path="results/figures/baseline"
-)
+        train_loss=history["train_loss"],
+        val_loss=history["val_loss"],
+        train_accuracy=history["train_accuracy"],
+        val_accuracy=history["val_accuracy"],
+        output_path="results/figures/baseline"
+    )
 
 
 if __name__ == "__main__":
