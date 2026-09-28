@@ -105,7 +105,7 @@ def train_frozen(args, device):
         data_dir=args.data_dir,
         batch_size=args.batch_size,
         num_workers=0,
-        use_augmentation=True,
+        use_augmentation=False,
     )
 
     model = build_resnet18(num_classes, "frozen").to(device)
@@ -356,7 +356,7 @@ def main():
     parser.add_argument("--lr", type=float, default=None)
     parser.add_argument("--weight-decay", type=float, default=1e-4)
     parser.add_argument("--cpu-threads", type=int, default=8)
-    parser.add_argument("--data-dir", default="data/raw/CUB_200_2011")
+    parser.add_argument("--data-dir", default="data")
     parser.add_argument("--output-dir", default=None)
     args = parser.parse_args()
 
