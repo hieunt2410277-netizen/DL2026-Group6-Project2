@@ -65,3 +65,11 @@ Thumbs.db
 # =========================
 
 .ipynb_checkpoints/
+
+# =========================
+# Python Cache / Bytecode
+# =========================
+
+__pycache__/
+*.py[cod]
+*$py.class
