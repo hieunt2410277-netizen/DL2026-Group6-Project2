@@ -8,14 +8,10 @@ experiment:
   seed: 42
 
 data:
+  data_dir: data
   image_size: 224
   batch_size: 32
-  num_workers: 2
-
-  train_dir: data/processed/train
-  val_dir: data/processed/val
-  test_dir: data/processed/test
-
+  num_workers: 0
   augmentation: basic
 
 model:
