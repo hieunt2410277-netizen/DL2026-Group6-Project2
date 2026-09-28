@@ -2,13 +2,15 @@
 # Project Data
 # =========================
 
-# Raw and processed datasets
 data/raw/*
 data/processed/*
 
-# Keep placeholder files
 !data/raw/.gitkeep
 !data/processed/.gitkeep
+
+# Local dataset
+data/CUB_200_2011/
+data/CUB_200_2011.tgz
 
 
 # =========================
@@ -27,14 +29,10 @@ checkpoints/*
 # Experiment Outputs
 # =========================
 
-# Logs
 logs/
 *.log
 
-# TensorBoard
 runs/
-
-# Temporary outputs
 outputs/
 
 
@@ -66,10 +64,11 @@ Thumbs.db
 
 .ipynb_checkpoints/
 
-# Local dataset
-data/CUB_200_2011/
-data/CUB_200_2011.tgz
 
-# Python cache
+# =========================
+# Python Cache / Bytecode
+# =========================
+
 __pycache__/
 *.py[cod]
+*$py.class
