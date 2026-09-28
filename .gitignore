@@ -65,3 +65,11 @@ Thumbs.db
 # =========================
 
 .ipynb_checkpoints/
+
+# Local dataset
+data/CUB_200_2011/
+data/CUB_200_2011.tgz
+
+# Python cache
+__pycache__/
+*.py[cod]

@@ -1,0 +1,11 @@
+{
+  "strategy": "partial_finetune",
+  "epochs": 3,
+  "total_parameters": 11279112,
+  "trainable_parameters": 8496328,
+  "train_loss": [4.4218,2.7002,1.7128],
+  "train_accuracy": [0.1707,0.6071,0.8158],
+  "val_loss": [3.3818,2.5300,2.1135],
+  "val_accuracy": [0.3773,0.5347,0.6063],
+  "best_val_accuracy": 0.6063
+}
