@@ -182,6 +182,22 @@ def limit_samples_per_class(
     for record in records:
         records_by_class[record["label"]].append(record)
 
+    insufficient_classes = [
+        (label, len(class_records))
+        for label, class_records in records_by_class.items()
+        if len(class_records) < samples_per_class
+    ]
+
+    if insufficient_classes:
+        label, available = min(
+            insufficient_classes,
+            key=lambda item: item[1],
+        )
+        raise ValueError(
+            f"Cannot sample {samples_per_class} images per class: "
+            f"class {label} has only {available} training images."
+        )
+
     rng = random.Random(seed)
 
     limited_records = []
@@ -193,6 +209,13 @@ def limit_samples_per_class(
 
         limited_records.extend(
             class_records[:samples_per_class]
+        )
+
+    expected_count = samples_per_class * len(records_by_class)
+    if len(limited_records) != expected_count:
+        raise RuntimeError(
+            f"Expected {expected_count} sampled records, "
+            f"got {len(limited_records)}."
         )
 
     return limited_records
