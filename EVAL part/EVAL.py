@@ -92,8 +92,8 @@ def plot_training_curves(history, save_path="training_curves.png"):
     ax1.grid(True)
     
     # Accuracy Curve
-    train_acc = history.get('train_acc', [])
-    val_acc = history.get('val_acc', [])
+    train_acc = history.get('train_accuracy', [])
+    val_acc = history.get('val_accuracy', [])
     if train_acc and val_acc:
         ax2.plot(epochs, train_acc, 'b-o', label='Train Acc')
         ax2.plot(epochs, val_acc, 'r-s', label='Val Acc')
