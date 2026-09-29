@@ -7,7 +7,7 @@ from PIL import Image
 
 import torch
 from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from .augmentation import get_transform
 
 
 DATASET_DIR_NAME = "CUB_200_2011"
@@ -182,6 +182,22 @@ def limit_samples_per_class(
     for record in records:
         records_by_class[record["label"]].append(record)
 
+    insufficient_classes = [
+        (label, len(class_records))
+        for label, class_records in records_by_class.items()
+        if len(class_records) < samples_per_class
+    ]
+
+    if insufficient_classes:
+        label, available = min(
+            insufficient_classes,
+            key=lambda item: item[1],
+        )
+        raise ValueError(
+            f"Cannot sample {samples_per_class} images per class: "
+            f"class {label} has only {available} training images."
+        )
+
     rng = random.Random(seed)
 
     limited_records = []
@@ -193,6 +209,13 @@ def limit_samples_per_class(
 
         limited_records.extend(
             class_records[:samples_per_class]
+        )
+
+    expected_count = samples_per_class * len(records_by_class)
+    if len(limited_records) != expected_count:
+        raise RuntimeError(
+            f"Expected {expected_count} sampled records, "
+            f"got {len(limited_records)}."
         )
 
     return limited_records
@@ -216,54 +239,6 @@ class CUB200Dataset(Dataset):
             image = self.transform(image)
 
         return image, label
-
-
-def get_transforms(
-    image_size: int = 224,
-    use_augmentation: bool = False,
-):
-    """
-    Create separate transforms for training and evaluation.
-
-    Augmentation is optional so that augmentation experiments
-    can be controlled explicitly.
-    """
-
-    normalization = transforms.Normalize(
-        mean=[0.485, 0.456, 0.406],
-        std=[0.229, 0.224, 0.225],
-    )
-
-    if use_augmentation:
-        train_transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                transforms.RandomResizedCrop(image_size),
-                transforms.RandomHorizontalFlip(),
-                transforms.ToTensor(),
-                normalization,
-            ]
-        )
-    else:
-        train_transform = transforms.Compose(
-            [
-                transforms.Resize((256, 256)),
-                transforms.CenterCrop(image_size),
-                transforms.ToTensor(),
-                normalization,
-            ]
-        )
-
-    evaluation_transform = transforms.Compose(
-        [
-            transforms.Resize((256, 256)),
-            transforms.CenterCrop(image_size),
-            transforms.ToTensor(),
-            normalization,
-        ]
-    )
-
-    return train_transform, evaluation_transform
 
 
 def get_dataloaders(
@@ -294,11 +269,18 @@ def get_dataloaders(
         seed=seed,
     )
 
-    train_transform, evaluation_transform = (
-        get_transforms(
-            image_size=image_size,
-            use_augmentation=use_augmentation,
-        )
+    augmentation_type = "basic" if use_augmentation else "none"
+
+    train_transform = get_transform(
+        augmentation=augmentation_type,
+        image_size=image_size,
+        train=True,
+    )
+
+    evaluation_transform = get_transform(
+        augmentation="none",
+        image_size=image_size,
+        train=False,
     )
 
     train_dataset = CUB200Dataset(

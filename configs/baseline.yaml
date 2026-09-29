@@ -1,0 +1,12 @@
+data:
+  image_size: 224
+  batch_size: 32
+
+model:
+  name: baseline_cnn
+
+training:
+  epochs: 20
+  learning_rate: 0.001
+
+seed: 42
