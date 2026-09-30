@@ -1,133 +1,289 @@
-import os
+import argparse
 import json
-import numpy as np
+import sys
+from pathlib import Path
+
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 import matplotlib.pyplot as plt
-import seaborn as sns
+import numpy as np
 import torch
+
 from sklearn.metrics import (
     accuracy_score,
-    precision_recall_fscore_support,
     confusion_matrix,
-    classification_report
+    precision_recall_fscore_support,
 )
 
-# ---------------------------------------------------------
-# 1. Common Evaluation Metrics Definition
-# ---------------------------------------------------------
-def evaluate_model_predictions(y_true, y_pred, num_classes=200):
-    """
-    Computes Accuracy, Precision, Recall, and F1-score (Macro & Weighted).
-    """
+from src.data.dataset import get_dataloaders
+from src.models.baseline_cnn import BaselineCNN
+from src.models.resnet18 import build_resnet18
+
+
+def evaluate_predictions(y_true, y_pred):
     accuracy = accuracy_score(y_true, y_pred)
-    
-    # Macro: unweighted average across classes (suitable for balanced datasets)
-    precision_macro, recall_macro, f1_macro, _ = precision_recall_fscore_support(
-        y_true, y_pred, average='macro', zero_division=0
-    )
-    
-    # Weighted: weighted average based on sample count per class
-    precision_weighted, recall_weighted, f1_weighted, _ = precision_recall_fscore_support(
-        y_true, y_pred, average='weighted', zero_division=0
+
+    precision_macro, recall_macro, f1_macro, _ = (
+        precision_recall_fscore_support(
+            y_true,
+            y_pred,
+            average="macro",
+            zero_division=0,
+        )
     )
 
-    metrics = {
+    precision_weighted, recall_weighted, f1_weighted, _ = (
+        precision_recall_fscore_support(
+            y_true,
+            y_pred,
+            average="weighted",
+            zero_division=0,
+        )
+    )
+
+    return {
         "accuracy": float(accuracy),
         "precision_macro": float(precision_macro),
         "recall_macro": float(recall_macro),
         "f1_macro": float(f1_macro),
         "precision_weighted": float(precision_weighted),
         "recall_weighted": float(recall_weighted),
-        "f1_weighted": float(f1_weighted)
+        "f1_weighted": float(f1_weighted),
     }
-    return metrics
 
-# ---------------------------------------------------------
-# 2. Confusion Matrix & Training Curve Plots
-# ---------------------------------------------------------
-def plot_confusion_matrix(y_true, y_pred, class_names=None, top_k_classes=20, save_path="confusion_matrix.png"):
-    """
-    Generates and saves a Confusion Matrix plot.
-    For CUB-200 (200 classes), displays Top K most confused classes for clarity.
-    """
-    cm = confusion_matrix(y_true, y_pred)
-    
-    plt.figure(figsize=(12, 10))
-    if len(np.unique(y_true)) > top_k_classes:
-        # Extract top_k_classes with highest misclassification counts
-        errors_per_class = cm.sum(axis=1) - np.diag(cm)
-        top_indices = np.argsort(errors_per_class)[-top_k_classes:]
-        cm_sub = cm[np.ix_(top_indices, top_indices)]
-        sub_names = [class_names[i] for i in top_indices] if class_names else top_indices
-        
-        sns.heatmap(cm_sub, annot=True, fmt='d', cmap='Blues',
-                    xticklabels=sub_names, yticklabels=sub_names)
-        plt.title(f'Confusion Matrix (Top {top_k_classes} Most Confused Classes)')
+
+def collect_predictions(model, loader, device):
+    model.eval()
+
+    y_true = []
+    y_pred = []
+
+    with torch.no_grad():
+        for images, labels in loader:
+            images = images.to(device)
+            labels = labels.to(device)
+
+            outputs = model(images)
+            predictions = outputs.argmax(dim=1)
+
+            y_true.extend(labels.cpu().numpy())
+            y_pred.extend(predictions.cpu().numpy())
+
+    return np.array(y_true), np.array(y_pred)
+
+
+def save_confusion_matrix(
+    y_true,
+    y_pred,
+    class_names,
+    save_path,
+    top_k=20,
+):
+    cm = confusion_matrix(
+        y_true,
+        y_pred,
+        labels=list(range(len(class_names))),
+    )
+
+    errors_per_class = cm.sum(axis=1) - np.diag(cm)
+    top_indices = np.argsort(errors_per_class)[-top_k:]
+
+    cm_sub = cm[np.ix_(top_indices, top_indices)]
+    names = [class_names[i] for i in top_indices]
+
+    fig, ax = plt.subplots(figsize=(14, 12))
+
+    image = ax.imshow(cm_sub)
+
+    ax.set_xticks(range(len(names)))
+    ax.set_yticks(range(len(names)))
+    ax.set_xticklabels(names, rotation=90, fontsize=7)
+    ax.set_yticklabels(names, fontsize=7)
+
+    ax.set_xlabel("Predicted label")
+    ax.set_ylabel("True label")
+    ax.set_title(
+        f"Top {top_k} most confused CUB-200 classes"
+    )
+
+    fig.colorbar(image, ax=ax)
+
+    for i in range(cm_sub.shape[0]):
+        for j in range(cm_sub.shape[1]):
+            if cm_sub[i, j] > 0:
+                ax.text(
+                    j,
+                    i,
+                    str(cm_sub[i, j]),
+                    ha="center",
+                    va="center",
+                    fontsize=6,
+                )
+
+    plt.tight_layout()
+    plt.savefig(save_path, dpi=300)
+    plt.close()
+
+
+def load_model(model_type, checkpoint_path, num_classes, device):
+    checkpoint = torch.load(
+        checkpoint_path,
+        map_location=device,
+    )
+
+    if model_type == "baseline":
+        model = BaselineCNN(
+            num_classes=num_classes
+        ).to(device)
+
+        state_dict = checkpoint
+
+    elif model_type == "resnet18_frozen":
+        model = build_resnet18(
+            num_classes=num_classes,
+            strategy="frozen",
+        ).to(device)
+
+        if (
+            isinstance(checkpoint, dict)
+            and "model_state_dict" in checkpoint
+        ):
+            state_dict = checkpoint["model_state_dict"]
+        else:
+            state_dict = checkpoint
+
+    elif model_type == "resnet18_partial":
+        model = build_resnet18(
+            num_classes=num_classes,
+            strategy="finetune",
+        ).to(device)
+
+        model.layer4.load_state_dict(
+            checkpoint["layer4_state_dict"]
+        )
+
+        model.fc.load_state_dict(
+            checkpoint["fc_state_dict"]
+        )
+
+        state_dict = None
+
     else:
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
-                    xticklabels=class_names, yticklabels=class_names)
-        plt.title('Full Confusion Matrix')
-        
-    plt.xlabel('Predicted Label')
-    plt.ylabel('True Label')
-    plt.xticks(rotation=45, ha='right')
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
-    plt.close()
+        raise ValueError(
+            f"Unsupported model type: {model_type}"
+        )
 
-def plot_training_curves(history, save_path="training_curves.png"):
-    """
-    Plots Loss and Accuracy curves for Training and Validation across epochs.
-    """
-    epochs = range(1, len(history['train_loss']) + 1)
-    
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
-    
-    # Loss Curve
-    ax1.plot(epochs, history['train_loss'], 'b-o', label='Train Loss')
-    ax1.plot(epochs, history['val_loss'], 'r-s', label='Val Loss')
-    ax1.set_title('Training & Validation Loss')
-    ax1.set_xlabel('Epochs')
-    ax1.set_ylabel('Loss')
-    ax1.legend()
-    ax1.grid(True)
-    
-    # Accuracy Curve
-    train_acc = history.get('train_accuracy', [])
-    val_acc = history.get('val_accuracy', [])
-    if train_acc and val_acc:
-        ax2.plot(epochs, train_acc, 'b-o', label='Train Acc')
-        ax2.plot(epochs, val_acc, 'r-s', label='Val Acc')
-        ax2.set_title('Training & Validation Accuracy')
-        ax2.set_xlabel('Epochs')
-        ax2.set_ylabel('Accuracy')
-        ax2.legend()
-        ax2.grid(True)
-        
-    plt.tight_layout()
-    plt.savefig(save_path, dpi=300)
-    plt.close()
+    if state_dict is not None:
+        model.load_state_dict(state_dict)
 
-# ---------------------------------------------------------
-# 3. Classification Error & Class Confusion Analysis
-# ---------------------------------------------------------
-def analyze_classification_errors(y_true, y_pred, class_names, top_n=10):
-    """
-    Extracts and ranks the most frequently confused class pairs.
-    """
-    cm = confusion_matrix(y_true, y_pred)
-    np.fill_diagonal(cm, 0) # Exclude correct predictions
-    
-    pairs = []
-    for i in range(cm.shape[0]):
-        for j in range(cm.shape[1]):
-            if cm[i, j] > 0:
-                pairs.append((class_names[i], class_names[j], cm[i, j]))
-                
-    # Sort pairs by misclassification count descending
-    pairs.sort(key=lambda x: x[2], reverse=True)
-    
-    print(f"\n--- TOP {top_n} MOST CONFUSED CLASS PAIRS ---")
-    for true_cls, pred_cls, count in pairs[:top_n]:
-        print(f"True: {true_cls:<30} | Predicted as: {pred_cls:<30} | Count: {count}")
-        
-    return pairs[:top_n]
+    return model
+
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument(
+    "--model-type",
+    choices=[
+        "baseline",
+        "resnet18_frozen",
+        "resnet18_partial",
+    ],
+    required=True,
+)
+
+    parser.add_argument(
+        "--checkpoint",
+        required=True,
+    )
+
+    parser.add_argument(
+        "--name",
+        required=True,
+    )
+
+    args = parser.parse_args()
+
+    device = torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+
+    print(f"Device: {device}")
+    print(f"Experiment: {args.name}")
+    print(f"Checkpoint: {args.checkpoint}")
+
+    _, _, test_loader, classes, num_classes = (
+        get_dataloaders(
+            data_dir="data",
+            batch_size=32,
+            image_size=224,
+            samples_per_class=None,
+            use_augmentation=False,
+            seed=42,
+            num_workers=0,
+        )
+    )
+
+    model = load_model(
+        model_type=args.model_type,
+        checkpoint_path=args.checkpoint,
+        num_classes=num_classes,
+        device=device,
+    )
+
+    y_true, y_pred = collect_predictions(
+        model=model,
+        loader=test_loader,
+        device=device,
+    )
+
+    metrics = evaluate_predictions(
+        y_true=y_true,
+        y_pred=y_pred,
+    )
+
+    output_dir = Path("results/final_evaluation")
+    output_dir.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
+
+    metrics_path = output_dir / f"{args.name}.json"
+
+    with metrics_path.open(
+        "w",
+        encoding="utf-8",
+    ) as file:
+        json.dump(
+            metrics,
+            file,
+            indent=4,
+        )
+
+    cm_path = (
+        output_dir
+        / f"{args.name}_confusion_matrix.png"
+    )
+
+    save_confusion_matrix(
+        y_true=y_true,
+        y_pred=y_pred,
+        class_names=classes,
+        save_path=cm_path,
+    )
+
+    print("\nFinal test metrics")
+    print("------------------")
+
+    for key, value in metrics.items():
+        print(f"{key}: {value:.4f}")
+
+    print(f"\nSaved metrics: {metrics_path}")
+    print(f"Saved confusion matrix: {cm_path}")
+
+
+if __name__ == "__main__":
+    main()

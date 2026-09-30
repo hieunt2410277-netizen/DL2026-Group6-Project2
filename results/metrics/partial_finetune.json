@@ -1,11 +1,30 @@
 {
   "strategy": "partial_finetune",
+  "frozen": "conv1 through layer3",
+  "trainable": "layer4 + fc",
+  "device": "cpu",
   "epochs": 3,
-  "total_parameters": 11279112,
-  "trainable_parameters": 8496328,
-  "train_loss": [4.4218,2.7002,1.7128],
-  "train_accuracy": [0.1707,0.6071,0.8158],
-  "val_loss": [3.3818,2.5300,2.1135],
-  "val_accuracy": [0.3773,0.5347,0.6063],
-  "best_val_accuracy": 0.6063
+  "batch_size": 32,
+  "learning_rate": 0.0001,
+  "weight_decay": 0.0001,
+  "train_loss": [
+    4.602524505240448,
+    2.970126867493242,
+    1.9620991835854777
+  ],
+  "train_accuracy": [
+    0.12786816854401334,
+    0.575302461410096,
+    0.8258239465999165
+  ],
+  "val_loss": [
+    3.6986663786570233,
+    2.9102322673797607,
+    2.4410333760579426
+  ],
+  "val_accuracy": [
+    0.30666666666666664,
+    0.4508333333333333,
+    0.5391666666666667
+  ]
 }
