@@ -388,6 +388,32 @@ The tests verify:
 - Fixed validation and test sets
 
 Expected result: `Ran 4 tests` followed by `OK`.
+## Inference Demo
+
+The best-performing model in this project is ResNet18 with partial fine-tuning.
+
+A complete model checkpoint is available through GitHub Releases. It contains all model weights, so downloading ImageNet pretrained weights is not required for inference.
+
+**Download checkpoint:**
+
+https://github.com/hieunt2410277-netizen/Fine-Grained-Image-Recognition/releases/download/v1.0.0-demo/resnet18_partial_full.pth
+
+Place the downloaded file at:
+
+`checkpoints/resnet18_partial_full.pth`
+
+**Run inference:**
+
+```powershell
+python -m scripts.predict --image "path/to/bird.jpg" --checkpoint "checkpoints/resnet18_partial_full.pth" --top-k 5
+```
+
+The script outputs the Top-5 predicted bird species and their Softmax probabilities.
+
+**Requirements:** Install dependencies from `requirements.txt`. The current inference script also requires the CUB-200-2011 dataset metadata to retrieve the official class names. Follow the Dataset Setup instructions before running inference.
+
+**Model performance:** The partial fine-tuned ResNet18 achieved 55.26% accuracy on the official CUB-200-2011 test split.
+
 
 ## Final Model Evaluation
 
