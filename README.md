@@ -241,6 +241,9 @@ Extract the dataset into:
 Alternatively, place `CUB_200_2011.tgz` in the `data/` directory.
 
 The data preparation pipeline will extract it automatically if needed.
+For complete dataset documentation, including the official
+data split, preprocessing, augmentation, and reproducibility
+instructions, see [DATA.md](DATA.md).
 
 ### Verify Dataset Loading
 
