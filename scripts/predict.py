@@ -7,7 +7,6 @@ import torch.nn as nn
 from PIL import Image
 from torchvision.models import resnet18
 
-from src.data.dataset import prepare_dataset, load_metadata
 from src.data.augmentation import get_transform
 from src.models.resnet18 import build_resnet18
 
@@ -41,9 +40,19 @@ def main():
     )
 
     # Load the official CUB-200-2011 class names.
-    dataset_root = prepare_dataset("data")
-    _, classes = load_metadata(dataset_root)
+        # Load class names without requiring the dataset.
+    classes_path = Path("configs/classes.txt")
+    classes = {}
+
+    with open(classes_path, "r", encoding="utf-8-sig") as file:
+        for line in file:
+            class_id, class_name = line.strip().split(maxsplit=1)
+            classes[int(class_id) - 1] = class_name
+
     num_classes = len(classes)
+
+    if num_classes != 200 or set(classes) != set(range(200)):
+        raise ValueError("Expected exactly 200 classes with IDs 1-200")
 
     if not 1 <= args.top_k <= num_classes:
         raise ValueError(
