@@ -1,4 +1,4 @@
-# Fine-Grained Image Recognition under Limited Training Data
+# DL2026-Group6-Project2/
 
 Deep Learning Course Project
 
