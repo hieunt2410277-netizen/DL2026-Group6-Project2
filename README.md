@@ -1,4 +1,4 @@
-# DL2026-Group6-Project2/
+# DL2026-Group6-Project2
 
 Deep Learning Course Project
 
