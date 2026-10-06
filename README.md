@@ -192,8 +192,8 @@ Fine-Grained-Image-Recognition/
 ### 1. Clone the Repository
 
 ```powershell
-git clone https://github.com/hieunt2410277-netizen/Fine-Grained-Image-Recognition.git
-cd Fine-Grained-Image-Recognition
+git clone https://github.com/hieunt2410277-netizen/DL2026-Group6-Project2.git
+cd DL2026-Group6-Project2
 ```
 
 ### 2. Create a Virtual Environment
@@ -396,7 +396,7 @@ A complete model checkpoint is available through GitHub Releases. It contains al
 
 **Download checkpoint:**
 
-https://github.com/hieunt2410277-netizen/Fine-Grained-Image-Recognition/releases/download/v1.0.0-demo/resnet18_partial_full.pth
+https://github.com/hieunt2410277-netizen/DL2026-Group6-Project2/releases/download/v1.0.0-demo/resnet18_partial_full.pth
 
 Place the downloaded file at:
 
@@ -410,7 +410,13 @@ python -m scripts.predict --image "path/to/bird.jpg" --checkpoint "checkpoints/r
 
 The script outputs the Top-5 predicted bird species and their Softmax probabilities.
 
-**Requirements:** Install dependencies from `requirements.txt`. The current inference script also requires the CUB-200-2011 dataset metadata to retrieve the official class names. Follow the Dataset Setup instructions before running inference.
+**Requirements:** Install dependencies from `requirements.txt`.
+
+The inference demo does not require the full CUB-200-2011 dataset.
+Class names are loaded from `configs/classes.txt`.
+
+For inference, only the project dependencies, the model checkpoint,
+and an input image are required.
 
 **Model performance:** The partial fine-tuned ResNet18 achieved 55.26% accuracy on the official CUB-200-2011 test split.
 
