@@ -39,8 +39,7 @@ def main():
         "cuda" if torch.cuda.is_available() else "cpu"
     )
 
-    # Load the official CUB-200-2011 class names.
-        # Load class names without requiring the dataset.
+    # Load class names without requiring the dataset.
     classes_path = Path("configs/classes.txt")
     classes = {}
 

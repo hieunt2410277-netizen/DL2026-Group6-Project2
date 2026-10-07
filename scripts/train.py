@@ -9,6 +9,7 @@ from torch.optim import Adam
 from torch.utils.data import DataLoader, TensorDataset
 
 from src.data.dataset import get_dataloaders
+from src.utils.config import load_config
 from src.models.resnet18 import build_resnet18, count_parameters
 
 
@@ -130,6 +131,7 @@ def train_frozen(args, device):
         "train_accuracy": [],
         "val_loss": [],
         "val_accuracy": [],
+        "best_val_accuracy": 0.0,
     }
 
     best_val_acc = 0.0
@@ -159,6 +161,7 @@ def train_frozen(args, device):
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            history["best_val_accuracy"] = best_val_acc
             torch.save(
                 {
                     "epoch": epoch,
@@ -285,6 +288,7 @@ def train_partial_finetune(args, device):
         "train_accuracy": [],
         "val_loss": [],
         "val_accuracy": [],
+        "best_val_accuracy": 0.0,
     }
 
     best_val_acc = 0.0
@@ -323,6 +327,7 @@ def train_partial_finetune(args, device):
 
         if val_acc > best_val_acc:
             best_val_acc = val_acc
+            history["best_val_accuracy"] = best_val_acc
             torch.save(
                 {
                     "epoch": epoch,
@@ -351,14 +356,52 @@ def main():
         choices=["frozen", "partial_finetune"],
         default="frozen",
     )
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument(
+        "--config",
+        default=None,
+        help="YAML config. Defaults to configs/frozen.yaml or configs/finetune.yaml.",
+    )
+    parser.add_argument("--epochs", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=None)
     parser.add_argument("--lr", type=float, default=None)
-    parser.add_argument("--weight-decay", type=float, default=1e-4)
+    parser.add_argument("--weight-decay", type=float, default=None)
     parser.add_argument("--cpu-threads", type=int, default=8)
-    parser.add_argument("--data-dir", default="data")
+    parser.add_argument("--data-dir", default=None)
     parser.add_argument("--output-dir", default=None)
     args = parser.parse_args()
+
+    default_config = (
+        "configs/frozen.yaml"
+        if args.strategy == "frozen"
+        else "configs/finetune.yaml"
+    )
+    config = load_config(args.config or default_config)
+
+    args.epochs = (
+        args.epochs
+        if args.epochs is not None
+        else config["training"]["epochs"]
+    )
+    args.batch_size = (
+        args.batch_size
+        if args.batch_size is not None
+        else config["data"]["batch_size"]
+    )
+    args.lr = (
+        args.lr
+        if args.lr is not None
+        else config["training"]["learning_rate"]
+    )
+    args.weight_decay = (
+        args.weight_decay
+        if args.weight_decay is not None
+        else config["training"].get("weight_decay", 1e-4)
+    )
+    args.data_dir = (
+        args.data_dir
+        if args.data_dir is not None
+        else config["data"]["data_dir"]
+    )
 
     if not torch.cuda.is_available():
         torch.set_num_threads(args.cpu_threads)

@@ -1,259 +1,249 @@
-# DL2026-Group6-Project2
+# DL2026 Group 6 — Project 2
+## Fine-Grained Image Recognition under Limited Training Data
 
-Deep Learning Course Project
+A Deep Learning course project studying **fine-grained image classification on CUB-200-2011** under limited labeled-data conditions.
 
-## Overview
+The project compares a small CNN trained from scratch with ImageNet-pretrained ResNet18, and investigates the effect of training-set size and basic data augmentation.
 
-Fine-grained image recognition aims to distinguish between visually similar categories, such as different bird species, flower species, or dog breeds.
-
-This project investigates how deep learning models perform when only a limited amount of labeled training data is available.
-
-The project focuses on analyzing the effects of:
-
-- Training data size
-- Transfer learning
-- Data augmentation
-- Fine-tuning strategies
+> **Best evaluated configuration:** ResNet18 with partial fine-tuning (`layer4 + fc`) — **55.26% test accuracy** on the official CUB-200-2011 test set.
 
 ---
 
+## 1. Research Questions
 
-## Research Questions
+**RQ1 — Training-data size**  
+How does reducing the number of labeled training images affect fine-grained classification performance?
 
-This project investigates three main research questions:
+**RQ2 — Transfer learning**  
+How effective is ImageNet-pretrained ResNet18 when labeled training data is limited?
 
-1. **RQ1 - Training Data Size:** How does reducing the number of labeled training images affect fine-grained classification performance?
-2. **RQ2 - Transfer Learning:** How effective is transfer learning when labeled training data is limited?
-3. **RQ3 - Data Augmentation:** Does data augmentation improve generalization and reduce overfitting?
-
-For RQ2, we additionally compare a frozen pretrained backbone with partial fine-tuning.
-
+**RQ3 — Data augmentation**  
+Does basic image augmentation improve generalization for the scratch BaselineCNN?
 
 ---
 
+## 2. Dataset
 
-## Dataset
+The project uses **CUB-200-2011 (Caltech-UCSD Birds-200-2011)**:
 
-We use the **CUB-200-2011 (Caltech-UCSD Birds-200-2011)** dataset for fine-grained bird species classification.
+- 200 bird species
+- 11,788 images
+- 5,994 official training images
+- 5,794 official test images
 
-- Number of classes: 200
-- Total images: 11,788
-- Official dataset: https://data.caltech.edu/records/65de6-vp158
-- Official training images: 5,994
-- Official test images: 5,794
+Official source: <https://data.caltech.edu/records/65de6-vp158>
 
-The official training split is further divided into training and validation sets using a fixed random seed (42).
-
-Our default data split is:
+The official test split is never used for training. The 5,994 official training images are split **per class** into:
 
 | Split | Images |
 |---|---:|
 | Training | 4,794 |
 | Validation | 1,200 |
-| Test | 5,794 |
+| Official test | 5,794 |
 
-The official test set is kept separate from training and model development.
-
-
----
-
-
-## Models
-
-The project evaluates the following model configurations:
-
-### 1. BaselineCNN
-
-A custom convolutional neural network trained from scratch, without pretrained weights.
-
-### 2. ResNet18 - Frozen Backbone
-
-An ImageNet-pretrained ResNet18 with its feature extractor frozen. Only the final classification layer is trained.
-
-### 3. ResNet18 - Partial Fine-Tuning
-
-An ImageNet-pretrained ResNet18 where the earlier layers remain frozen while layer4 and the final classifier are trained.
-
-### 4. BaselineCNN with Data Augmentation
-
-The baseline architecture trained with basic image augmentation, including random cropping and horizontal flipping.
-
+The split uses **seed 42**. The split is performed per class to preserve class balance. See [`DATA.md`](DATA.md) for the complete data protocol.
 
 ---
 
+## 3. Models and Experiments
 
-## Experiments
+### EXP01 — BaselineCNN
 
-| Experiment | Description |
-|---|---|
-| EXP01 | Custom BaselineCNN trained from scratch |
-| EXP02 | ResNet18 transfer learning: frozen vs partial fine-tuning |
-| EXP03 | BaselineCNN with and without data augmentation |
-| EXP04 | Impact of limited training data |
+A lightweight CNN trained from scratch:
 
-For EXP04, we use the following training-data sizes:
+- 3 convolution blocks
+- Batch normalization
+- ReLU
+- max pooling
+- adaptive average pooling
+- dropout
+- 200-class linear classifier
 
-- 5 images per class (1,000 training images)
-- 10 images per class (2,000 training images)
-- 15 images per class (3,000 training images)
-- 20 images per class (4,000 training images)
+It is a controlled reference model, **not a state-of-the-art CUB model**.
 
-All data-size experiments use the same validation and official test sets.
+### EXP02 — Transfer Learning
 
-### Main Results
+**Frozen ResNet18**
 
-| Model / Experiment | Test Accuracy |
-|---|---:|
-| BaselineCNN | 4.42% |
-| ResNet18 Frozen | 50.88% |
-| ResNet18 Partial Fine-Tuning | 55.26% |
-| BaselineCNN with Augmentation | 4.57% |
-| Data Size - 5 images/class | 1.85% |
-| Data Size - 10 images/class | 3.07% |
-| Data Size - 15 images/class | 3.38% |
-| Data Size - 20 images/class | 4.90% |
+- ImageNet-pretrained ResNet18
+- pretrained backbone frozen
+- only the final classifier is trained
+- 10 epochs, learning rate `1e-3`
+- best-validation checkpoint is used for final evaluation
 
-The highest test accuracy is achieved by ResNet18 with partial fine-tuning.
+**Partial fine-tuning**
 
+- `conv1` through `layer3` frozen
+- `layer4` and final `fc` trainable
+- 3 epochs, learning rate `1e-4`
+- weight decay `1e-4`
+- frozen features are cached to reduce CPU training time
+- best-validation checkpoint is used for final evaluation
+
+### EXP03 — Basic Augmentation
+
+BaselineCNN trained on the full default training split with:
+
+- Random resized crop
+- Random horizontal flip
+
+The validation and test transformations remain deterministic.
+
+### EXP04 — Training-data size
+
+BaselineCNN trained with:
+
+- 5 images/class → 1,000 training images
+- 10 images/class → 2,000
+- 15 images/class → 3,000
+- 20 images/class → 4,000
+
+The validation and official test sets remain fixed.
 
 ---
 
-## Evaluation Metrics
+## 4. Final Results
 
-The models will be evaluated using:
+All values below match the final report and the saved evaluation artifacts in `results/final_evaluation/`.
 
-- Accuracy
-- Precision
-- Recall
-- F1-score
-- Confusion Matrix
-- Training Loss
-- Validation Loss
-- Training Accuracy
-- Validation Accuracy
+| Experiment | Accuracy | Macro Precision | Macro Recall | Macro F1 |
+|---|---:|---:|---:|---:|
+| BaselineCNN | 4.42% | 3.80% | 4.52% | 3.17% |
+| ResNet18 Frozen | 50.88% | 55.40% | 51.23% | 51.40% |
+| **ResNet18 Partial Fine-Tuning** | **55.26%** | **58.84%** | **55.49%** | **54.47%** |
+| BaselineCNN + Augmentation | 4.57% | 5.02% | 4.68% | 3.36% |
+| 5 images/class | 1.85% | 1.72% | 1.94% | 1.18% |
+| 10 images/class | 3.07% | 2.81% | 3.12% | 2.10% |
+| 15 images/class | 3.38% | 2.55% | 3.44% | 2.37% |
+| 20 images/class | 4.90% | 4.16% | 4.95% | 3.67% |
+
+### Interpretation
+
+- Increasing the available training data produced an upward accuracy trend for the scratch baseline.
+- Transfer learning was the strongest factor in these experiments.
+- Partial fine-tuning outperformed the frozen ResNet18 configuration by **4.38 percentage points** in test accuracy.
+- Basic augmentation improved the scratch baseline by only **0.15 percentage points**.
+- The transfer-learning configurations were trained with different schedules, so the frozen-vs-partial difference should be treated as an **observed experimental result**, not a controlled causal estimate.
+- BaselineCNN and ResNet18 also differ in architecture, so their complete performance gap cannot be attributed to pretraining alone.
+- Experiments were generally run once with seed 42; no mean ± standard deviation is reported.
 
 ---
 
-## Project Structure
+## 5. Project Structure
 
 ```text
-Fine-Grained-Image-Recognition/
-│
-├── configs/
-│   └── Experiment configuration files
-│
-├── data/
+DL2026-Group6-Project2/
+├── configs/                 # Experiment configuration files
+├── data/                    # Dataset location (images not committed)
 │   ├── raw/
-│   ├── processed/
-│   └── README.md
-│
-├── notebooks/
-│   └── Data exploration and visualization notebooks
-│
+│   └── processed/
+├── experiments/             # Experiment-specific notes/artifacts
+├── report/                  # Final report and comparison notes
+├── results/
+│   ├── figures/             # Training curves and comparison plots
+│   ├── final_evaluation/   # Final metrics + confusion matrices
+│   └── metrics/             # Training histories
+├── scripts/
+│   ├── train_baseline.py
+│   ├── train.py
+│   ├── train_augmentation.py
+│   ├── train_data_size.py
+│   ├── predict.py
+│   └── export_model.py
 ├── src/
 │   ├── data/
+│   ├── evaluation/
 │   ├── models/
 │   ├── training/
-│   ├── evaluation/
 │   └── utils/
-│
-├── scripts/
-│   └── Training and evaluation scripts
-│
-├── experiments/
-│   ├── exp01_baseline/
-│   ├── exp02_transfer_learning/
-│   ├── exp03_augmentation/
-│   └── exp04_data_size/
-│
-├── results/
-│   ├── figures/
-│   ├── confusion_matrices/
-│   ├── metrics/
-│   └── README.md
-│
-├── checkpoints/
-│   └── Local model weights
-│
-├── report/
-│   └── Report materials
-│
-├── slides/
-│   └── Presentation materials
-│
+├── tests/
+├── checkpoints/             # Model checkpoints (not committed)
+├── DATA.md
 ├── requirements.txt
-├── .gitignore
+├── requirements-lock.txt
 └── README.md
+```
 
 ---
 
-## Installation
+## 6. Installation
 
-### 1. Clone the Repository
+### Requirements
 
-```powershell
-git clone https://github.com/hieunt2410277-netizen/DL2026-Group6-Project2.git
-cd DL2026-Group6-Project2
-```
+- Python **3.11+**
+- PyTorch
+- torchvision
+- CPU or CUDA-capable GPU
 
-### 2. Create a Virtual Environment
-
-Python 3.11 or later is recommended.
-
-On Windows PowerShell:
+Create a virtual environment:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 ```
 
-If PowerShell blocks activation, use:
+If PowerShell blocks activation:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
 .\.venv\Scripts\Activate.ps1
 ```
 
-### 3. Install Dependencies
+Install dependencies:
 
 ```powershell
+python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-The main dependencies include PyTorch, torchvision, NumPy, Pillow, matplotlib, scikit-learn and PyYAML.
+For the recorded environment snapshot:
 
-### 4. Verify Installation
+```powershell
+python -m pip install -r requirements-lock.txt
+```
+
+Verify:
 
 ```powershell
 python -c "import torch, torchvision, sklearn, PIL, yaml; print('Dependencies OK')"
 ```
 
-## Dataset Setup
+> `requirements-lock.txt` is an environment snapshot. If installing on a different platform or CUDA setup, the unpinned `requirements.txt` may be more appropriate.
 
-Download the CUB-200-2011 dataset from:
+---
 
-https://data.caltech.edu/records/65de6-vp158
+## 7. Download Dataset and Checkpoint
 
-Extract the dataset into:
+### 7.1 CUB-200-2011 Dataset
 
-`data/CUB_200_2011/`
+Download CUB-200-2011 from the official source:
 
-Alternatively, place `CUB_200_2011.tgz` in the `data/` directory.
+<https://data.caltech.edu/records/65de6-vp158>
 
-The data preparation pipeline will extract it automatically if needed.
-For complete dataset documentation, including the official
-data split, preprocessing, augmentation, and reproducibility
-instructions, see [DATA.md](DATA.md).
+The dataset is required for training, evaluation, and full experiment reproduction. The
+image data is intentionally **not committed to the repository**.
 
-### Verify Dataset Loading
+Either extract it to:
 
-Run from the repository root:
+```text
+data/CUB_200_2011/
+```
+
+or place the original archive here:
+
+```text
+data/CUB_200_2011.tgz
+```
+
+The project can extract the archive automatically.
+
+Verify the dataset:
 
 ```powershell
 python -m src.data.dataset
 ```
 
-Expected dataset information:
+Expected:
 
 ```text
 Number of classes: 200
@@ -263,225 +253,260 @@ Test samples: 5794
 Image batch shape: torch.Size([32, 3, 224, 224])
 ```
 
-The project uses the official CUB-200-2011 test split and a fixed random seed of 42 for reproducibility.
+### 7.2 Pre-trained Checkpoint
 
-For further dataset details, see [data/README.md](data/README.md).
+If you only want to run the inference demo, you **do not need to download the CUB-200-2011
+dataset**. Download the exported full ResNet18 checkpoint from the **GitHub Release** for this
+repository:
 
+- **File:** `resnet18_partial_full.pth`
+- **Size:** approximately 43.1 MB
+- **Purpose:** inference with the best partial fine-tuning model
+
+> The checkpoint is distributed through GitHub Releases rather than committed to the repository
+> because it is a relatively large binary file.
+
+After downloading, place it at:
+
+```text
+checkpoints/resnet18_partial_full.pth
+```
+
+The `checkpoints/` directory is intentionally ignored by Git except for its `.gitkeep` file.
+See [`checkpoints/README.md`](checkpoints/README.md) for the checkpoint workflow.
 
 ---
 
-## Reproducing Experiments
+## 8. Quick Inference
 
-All commands below must be executed from the repository root after installing dependencies and preparing the CUB-200-2011 dataset.
+This is the fastest way to verify the exported model without preparing the full CUB dataset.
 
-The experiments were conducted with a fixed random seed of 42. The default image size is 224 × 224 pixels.
-
-### EXP01 — Baseline CNN
-
-Train the custom BaselineCNN from scratch:
-
-```powershell
-python -m scripts.train_baseline
-```
-
-Training configuration:
-
-- Epochs: 20
-- Batch size: 32
-- Learning rate: 0.001
-- Random seed: 42
-- Data augmentation: disabled
-
-Outputs:
-
-- `checkpoints/baseline_final.pth`
-- `results/metrics/baseline.json`
-- `results/figures/baseline_accuracy.png`
-- `results/figures/baseline_loss.png`
-
-### EXP02 — Transfer Learning
-
-The project evaluates two ImageNet-pretrained ResNet18 strategies.
-
-**Frozen backbone (10 epochs):**
-
-```powershell
-python -m scripts.train --strategy frozen --epochs 10 --batch-size 32
-```
-
-**Partial fine-tuning (3 epochs):**
-
-```powershell
-python -m scripts.train --strategy partial_finetune --epochs 3 --batch-size 32
-```
-
-In the frozen strategy, only the final classification layer is trained.
-
-In partial fine-tuning, the earlier layers are frozen while layer4 and the final classification layer are trained.
-
-Outputs include:
-
-- `checkpoints/resnet18_frozen_best.pth`
-- `checkpoints/resnet18_partial_finetune_best.pth`
-- `results/metrics/frozen.json`
-- `results/metrics/partial_finetune.json`
-- `experiments/exp02_transfer_learning/`
-
-### EXP03 — Data Augmentation
-
-Train the custom CNN with basic data augmentation:
-
-```powershell
-python -m scripts.train_augmentation
-```
-
-This experiment uses the same model architecture and main training settings as the baseline, but enables training-time augmentation.
-
-Outputs:
-
-- `checkpoints/augmentation_final.pth`
-- `results/metrics/augmentation.json`
-- `results/figures/augmentation_accuracy.png`
-- `results/figures/augmentation_loss.png`
-
-### EXP04 — Training Data Size
-
-Train the custom CNN using different numbers of training images per class:
-
-```powershell
-python -m scripts.train_data_size
-```
-
-The script evaluates four data-size settings:
-
-| Images per Class | Training Images |
-|---:|---:|
-| 5 | 1,000 |
-| 10 | 2,000 |
-| 15 | 3,000 |
-| 20 | 4,000 |
-
-The validation and official test sets remain unchanged.
-
-Outputs:
-
-- `checkpoints/data_size_5.pth`
-- `checkpoints/data_size_10.pth`
-- `checkpoints/data_size_15.pth`
-- `checkpoints/data_size_20.pth`
-- `results/metrics/data_size_*.json`
-- `results/figures/data_size_*`
-
-### Sampling Tests
-
-Run the automated sampling tests:
-
-```powershell
-python -m experiments.exp04_data_size.test_dataset_sampling
-```
-
-The tests verify:
-
-- Balanced per-class sampling
-- Reproducible sampling with a fixed random seed
-- Error handling for insufficient training images
-- Fixed validation and test sets
-
-Expected result: `Ran 4 tests` followed by `OK`.
-## Inference Demo
-
-The best-performing model in this project is ResNet18 with partial fine-tuning.
-
-A complete model checkpoint is available through GitHub Releases. It contains all model weights, so downloading ImageNet pretrained weights is not required for inference.
-
-**Download checkpoint:**
-
-https://github.com/hieunt2410277-netizen/DL2026-Group6-Project2/releases/download/v1.0.0-demo/resnet18_partial_full.pth
-
-Place the downloaded file at:
-
-`checkpoints/resnet18_partial_full.pth`
-
-**Run inference:**
+1. Install the Python dependencies from [Section 6](#6-installation).
+2. Download `resnet18_partial_full.pth` from the GitHub Release and place it in
+   `checkpoints/`.
+3. Provide any RGB bird image as input.
+4. Run:
 
 ```powershell
 python -m scripts.predict --image "path/to/bird.jpg" --checkpoint "checkpoints/resnet18_partial_full.pth" --top-k 5
 ```
 
-The script outputs the Top-5 predicted bird species and their Softmax probabilities.
+The script uses the fixed 200-class list in `configs/classes.txt` and prints the Top-k species
+predictions and softmax probabilities. The exported full checkpoint contains the complete
+ResNet18 state, so **the CUB dataset is not required for inference**.
 
-**Requirements:** Install dependencies from `requirements.txt`.
+> The model is a closed-set classifier trained on the 200 CUB classes. It will always return one
+> of those classes, even when the input is a non-bird image or a species outside CUB-200-2011.
 
-The inference demo does not require the full CUB-200-2011 dataset.
-Class names are loaded from `configs/classes.txt`.
+---
 
-For inference, only the project dependencies, the model checkpoint,
-and an input image are required.
+## 9. Reproduce the Experiments
 
-**Model performance:** The partial fine-tuned ResNet18 achieved 55.26% accuracy on the official CUB-200-2011 test split.
+Run all commands from the repository root.
 
+### EXP01 — Baseline
 
-## Final Model Evaluation
+```powershell
+python -m scripts.train_baseline
+```
 
-The final evaluation script runs inference on the official CUB-200-2011 test set.
+Produces:
 
-It computes:
+```text
+checkpoints/baseline_final.pth
+results/metrics/baseline.json
+results/figures/baseline_accuracy.png
+results/figures/baseline_loss.png
+```
+
+### EXP02 — Transfer Learning
+
+Frozen backbone:
+
+```powershell
+python -m scripts.train --strategy frozen --epochs 10 --batch-size 32
+```
+
+Partial fine-tuning:
+
+```powershell
+python -m scripts.train --strategy partial_finetune --epochs 3 --batch-size 32
+```
+
+Produces:
+
+```text
+checkpoints/resnet18_frozen_best.pth
+checkpoints/resnet18_partial_finetune_best.pth
+results/metrics/frozen.json
+results/metrics/partial_finetune.json
+```
+
+Regenerate transfer-learning figures:
+
+```powershell
+python -m scripts.plot_results
+```
+
+Compare the saved histories:
+
+```powershell
+python -m scripts.compare_results
+```
+
+### EXP03 — Basic augmentation
+
+```powershell
+python -m scripts.train_augmentation
+```
+
+### EXP04 — Training-data size
+
+```powershell
+python -m scripts.train_data_size
+```
+
+This runs all four settings: 5, 10, 15, and 20 images/class.
+
+---
+
+## 10. Final Evaluation
+
+The evaluation script reports:
 
 - Accuracy
-- Macro Precision
-- Macro Recall
-- Macro F1-score
-- Weighted Precision, Recall and F1-score
+- Macro precision / recall / F1
+- Weighted precision / recall / F1
 - Confusion matrix
 
-### BaselineCNN
+Examples:
 
 ```powershell
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/baseline_final.pth --name baseline
-```
 
-### ResNet18 Frozen
-
-```powershell
 python "EVAL part/EVAL.py" --model-type resnet18_frozen --checkpoint checkpoints/resnet18_frozen_best.pth --name resnet18_frozen
-```
 
-### ResNet18 Partial Fine-Tuning
-
-```powershell
 python "EVAL part/EVAL.py" --model-type resnet18_partial --checkpoint checkpoints/resnet18_partial_finetune_best.pth --name resnet18_partial
 ```
 
-### Augmentation
+Augmentation:
 
 ```powershell
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/augmentation_final.pth --name augmentation
 ```
 
-### Limited-Data Models
+Limited-data checkpoints:
 
 ```powershell
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/data_size_5.pth --name data_size_5
-
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/data_size_10.pth --name data_size_10
-
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/data_size_15.pth --name data_size_15
-
 python "EVAL part/EVAL.py" --model-type baseline --checkpoint checkpoints/data_size_20.pth --name data_size_20
 ```
 
-Evaluation outputs are saved under:
+Results are saved under:
 
-`results/final_evaluation/`
+```text
+results/final_evaluation/
+```
 
-Each evaluation produces a JSON file containing classification metrics and a confusion matrix image.
+---
 
-**Note:** Model checkpoints are stored locally and excluded from Git. To reproduce evaluation from a fresh clone, train the models first or obtain the corresponding checkpoints separately.
+## 11. Detailed Inference and Model Export
 
-## Experimental Findings
+The repository includes `scripts/predict.py` for the exported full ResNet18 checkpoint. The
+shortest demo workflow is described in [Section 8](#8-quick-inference).
 
-The final verified results are summarized in:
+If the project release contains:
 
-`EVAL part/evaluation_report.md`
+```text
+resnet18_partial_full.pth
+```
 
-The strongest evaluated model is the ImageNet-pretrained ResNet18 with partial fine-tuning, achieving 55.26% test accuracy on CUB-200-2011.
+place it at:
+
+```text
+checkpoints/resnet18_partial_full.pth
+```
+
+Then:
+
+```powershell
+python -m scripts.predict --image "path/to/bird.jpg" --checkpoint "checkpoints/resnet18_partial_full.pth" --top-k 5
+```
+
+The full exported checkpoint contains the complete ResNet18 state, so inference does **not** require the CUB dataset.
+
+The class names are read from:
+
+```text
+configs/classes.txt
+```
+
+### Exporting the full checkpoint
+
+If you have the partial fine-tuning checkpoint:
+
+```powershell
+python -m scripts.export_model
+```
+
+This reconstructs the ImageNet-pretrained backbone and combines it with the trained `layer4` and `fc`.
+
+> Exporting from the partial checkpoint may require downloading the standard ImageNet-pretrained ResNet18 weights once.
+
+---
+
+## 12. Tests
+
+Run the automated tests with:
+
+```powershell
+python -m pytest tests
+```
+
+Or run the baseline pipeline test directly:
+
+```powershell
+python tests/test_baseline_pipeline.py
+```
+
+Dataset sampling tests:
+
+```powershell
+python -m experiments.exp04_data_size.test_dataset_sampling
+```
+
+---
+
+## 13. Reproducibility
+
+The project uses seed **42** for dataset splitting and limited-data sampling.
+
+Important limitations:
+
+1. Most experiments were run once, so statistical uncertainty across seeds is not measured.
+2. The official test set is kept separate from training and validation.
+3. BaselineCNN and ResNet18 differ in architecture as well as initialization.
+4. Frozen and partial fine-tuning use different epoch counts and learning rates.
+5. Basic augmentation was intentionally simple and produced only a small observed improvement.
+6. The classifier is a closed-set 200-class classifier and is not designed to reject unknown species or non-bird images.
+
+For data-specific details, see [`DATA.md`](DATA.md).
+
+---
+
+## 14. Reports and Results
+
+- Final project report: [`report/Group6_Project2_Report.pdf`](report/Group6_Project2_Report.pdf)
+- Transfer-learning analysis: [`report/TRANSFER_LEARNING_COMPARISON.md`](report/TRANSFER_LEARNING_COMPARISON.md)
+- Evaluation findings: [`EVAL part/evaluation_report.md`](EVAL%20part/evaluation_report.md)
+- Dataset documentation: [`DATA.md`](DATA.md)
+
+---
+
+## 15. Team
+
+**Group 6 — Deep Learning 2026, Project 2**
+
+The repository contains the implementation, experiment artifacts, evaluation pipeline, and final report for the project.

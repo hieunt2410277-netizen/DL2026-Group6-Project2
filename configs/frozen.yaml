@@ -1,14 +1,18 @@
-model: resnet18
-num_classes: 200
+model:
+  name: resnet18
+  num_classes: 200
 
 transfer_learning:
   strategy: frozen
 
+data:
+  data_dir: data
+  image_size: 224
+  batch_size: 32
+  seed: 42
+  num_workers: 0
+
 training:
   epochs: 10
-  batch_size: 32
   learning_rate: 0.001
-
-data:
-  path: data/raw/CUB_200_2011
-  augmentation: true
+  weight_decay: 0.0001

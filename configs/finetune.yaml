@@ -1,14 +1,20 @@
-model: resnet18
-num_classes: 200
+model:
+  name: resnet18
+  num_classes: 200
 
 transfer_learning:
-  strategy: finetune
-
-training:
-  epochs: 10
-  batch_size: 32
-  learning_rate: 0.0001
+  strategy: partial_finetune
+  frozen: conv1_through_layer3
+  trainable: layer4_and_fc
 
 data:
-  path: data/raw/CUB_200_2011
-  augmentation: true
+  data_dir: data
+  image_size: 224
+  batch_size: 32
+  seed: 42
+  num_workers: 0
+
+training:
+  epochs: 3
+  learning_rate: 0.0001
+  weight_decay: 0.0001

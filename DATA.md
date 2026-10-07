@@ -98,7 +98,7 @@ Preprocessing includes:
 
 1. Loading each image using Pillow.
 2. Converting images to RGB.
-3. Resizing and cropping to the required input dimensions.
+3. Resizing images to the required input dimensions for the non-augmented pipeline.
 4. Converting images to PyTorch tensors.
 5. Normalizing with ImageNet mean and standard deviation.
 

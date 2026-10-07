@@ -3,8 +3,8 @@
 experiment:
   name: augmentation
   description: >
-    Evaluate the effect of data augmentation on fine-grained image
-    classification under limited training data.
+    Evaluate the effect of basic data augmentation on fine-grained image
+    classification using the full default training split.
   seed: 42
 
 data:

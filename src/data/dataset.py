@@ -46,7 +46,27 @@ def prepare_dataset(data_dir: str = "./data") -> Path:
     data_dir.mkdir(parents=True, exist_ok=True)
 
     with tarfile.open(archive_path, "r:gz") as tar:
-        tar.extractall(path=data_dir, filter="data")
+        # Python 3.12+ supports extractall(filter="data"), but Python 3.11
+        # does not. Validate archive members explicitly so the project works
+        # on the documented Python versions without allowing path traversal.
+        data_root = data_dir.resolve()
+
+        for member in tar.getmembers():
+            member_path = (data_dir / member.name).resolve()
+
+            if os.path.commonpath([data_root, member_path]) != str(data_root):
+                raise RuntimeError(
+                    f"Unsafe archive member path detected: {member.name}"
+                )
+
+            if member.issym() or member.islnk():
+                link_target = (member_path.parent / member.linkname).resolve()
+                if os.path.commonpath([data_root, link_target]) != str(data_root):
+                    raise RuntimeError(
+                        f"Unsafe archive link detected: {member.name}"
+                    )
+
+        tar.extractall(path=data_dir)
 
     if not images_dir.exists():
         raise RuntimeError(

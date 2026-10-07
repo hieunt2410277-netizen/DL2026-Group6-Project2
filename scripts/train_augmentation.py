@@ -11,7 +11,7 @@ from src.data.dataset import get_dataloaders
 
 
 def main():
-    config = load_config("configs/baseline.yaml")
+    config = load_config("configs/augmentation.yaml")
 
     seed = config["seed"]
     set_seed(seed)
@@ -112,12 +112,6 @@ def main():
         f"Test Acc: {test_metrics['accuracy']:.4f}"
     )
      
-    torch.save(
-        model.state_dict(),
-        "checkpoints/augmentation_final.pth"
-    )
-
-
     torch.save(
         model.state_dict(),
         "checkpoints/augmentation_final.pth"
