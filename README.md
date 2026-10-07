@@ -221,7 +221,7 @@ Download CUB-200-2011 from the official source:
 <https://data.caltech.edu/records/65de6-vp158>
 
 The dataset is required for training, evaluation, and full experiment reproduction. The
-image data is intentionally **not committed to the repository**.
+image data is **not committed to the repository**.
 
 Either extract it to:
 
@@ -255,8 +255,7 @@ Image batch shape: torch.Size([32, 3, 224, 224])
 
 ### 7.2 Pre-trained Checkpoint
 
-If you only want to run the inference demo, you **do not need to download the CUB-200-2011
-dataset**. Download the exported full ResNet18 checkpoint from the **GitHub Release** for this
+If you only want to run the inference demo, download the exported full ResNet18 checkpoint from the **GitHub Release** for this
 repository:
 
 - **File:** `resnet18_partial_full.pth`
